@@ -1,0 +1,51 @@
+---
+title: "Benefit Type Maps"
+author: "Laurel Abowd"
+date: "1/14/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(janitor)
+library(here)
+library(sf)
+library(tmap)
+```
+
+Data is in the GP Forest Folks folder under the survey/interviews tab - just copy the data folder w/in R data.
+
+# Test to work with categorizing benefits
+
+```{r}
+benefits_test <- read_csv(here("data", "benefit_type_test.csv")) 
+respondents <- read_csv(here("data", "Respondent_names.csv")) 
+benefits_test <- merge(respondents, benefits_test)
+
+```
+
+# Take data from wide format with categories in columns to categories in rows and drop na values
+
+```{r}
+benefits_tidy <- benefits_test %>% 
+  pivot_longer(!1:15, names_to = "Category") %>% drop_na()
+
+```
+
+# Convert benefits_tidy to shapefile
+
+```{r}
+benefits_tidy_sf <- benefits_tidy %>% 
+  st_as_sf(wkt = "wkt", crs = 4326) %>% 
+  select(-geojson)
+```
+
+# Map benefit categories
+
+```{r}
+ggplot(data = benefits_tidy_sf) +
+  geom_sf(aes(geometry = wkt), alpha = 0.5) +
+  facet_wrap(~ Category, ncol = 4)
+```
+

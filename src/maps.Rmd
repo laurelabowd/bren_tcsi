@@ -1,0 +1,289 @@
+---
+title: "Maps"
+author: "Laurel Abowd"
+date: "1/4/2022"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(janitor)
+library(here)
+library(sf)
+library(rnaturalearth)
+library(rgeos)
+```
+
+Data is in the GP Forest Folks folder under the survey/interviews tab - just copy the data folder w/in R data.
+
+# Benefits
+
+```{r}
+benefits <- st_read(here("data", "Map area - Benefits", "Map area - Benefits - Polygons.shp"))
+respondents <- read_csv(here("data", "Respondent_names.csv")) 
+```
+
+
+```{r}
+names(respondents)[1] <- "responde"
+benefits <- merge(benefits, respondents)
+
+```
+
+
+```{r include = FALSE}
+ggplot(data = benefits) +
+  geom_sf(aes(fill = Name, alpha = 0.5))
+```
+
+
+```{r include = FALSE}
+library(tmap)
+
+tmap_mode(mode = "view")
+
+tm_shape(benefits) +
+   tm_fill("Name", palette = "BuGn", alpha = 0.5)
+```
+
+
+```{r}
+# Benefit area for each respondent
+benefits_respondents <- benefits %>% 
+  group_by(responde, Name) %>% 
+  summarize("geometry" = st_union(geometry)) %>%  ungroup()
+```
+
+```{r include = FALSE}
+julie <- benefits_respondents %>% 
+  filter(Name == "Julie Fair")
+
+allison <- benefits_respondents %>% 
+  filter(Name == "Allison Thomson") 
+```
+
+
+```{r include = FALSE}
+ggplot(data = benefits_respondents) +
+  geom_sf(fill = "blue", alpha = 0.1)
+
+
+ggplot() +
+  geom_sf(data = julie, fill = "blue", alpha = 0.1) +
+  geom_sf(data = allison, fill = "red", alpha = 0.1)
+  
+```
+
+```{r}
+library(rgeos)
+# Respondents 
+benefits_union <- gUnaryUnion(as_Spatial(benefits), id = benefits$Name) %>%  st_as_sf()
+  
+```
+
+## Map of overlapping benefits
+Each individual corresponds to one layer.
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "view")
+
+tm_shape(benefits_union) +
+   tm_fill("blue", alpha = 0.1)
+```
+
+
+## Benefit responses
+Hover over the map for individual responses.
+
+```{r}
+benefit_types <- read_csv(here("data", "benefits_responses.csv")) %>% slice(-1)
+respondents_two <- read_csv(here("data", "Respondent_names.csv")) 
+benefit_types <- merge(benefit_types, respondents_two)
+```
+
+```{r}
+benefit_types_sf <- benefit_types %>% 
+  st_as_sf(wkt = "wkt", crs = 4326) %>% 
+  select(-geojson)
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "view")
+
+tm_shape(benefit_types_sf) +
+   tm_fill("Name", palette = "Blues", alpha = 0.5, id = "What forest benefit does your organization value in this area?")
+```
+
+
+## Benefit responses by organization type
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "view")
+
+tm_shape(benefit_types_sf) +
+   tm_fill("Type", palette = "Dark2", alpha = 0.2, id = "What forest benefit does your organization value in this area?")
+```
+
+
+
+# Adverse Impacts
+
+```{r}
+impacts <- st_read(here("data", "Map area - Adverse Impacts from Disturbances", "Map area - Adverse Impacts from Disturbances - Polygons.shp"))
+
+impacts <- merge(impacts, respondents)
+```
+
+## Map of overlapped impacts
+Each individual corresponds to one layer.
+
+```{r}
+impacts_union <- gUnaryUnion(as_Spatial(impacts), id = impacts$Name) %>%  st_as_sf()
+```
+```{r}
+library(tmap)
+
+tmap_mode(mode = "view")
+
+tm_shape(impacts_union) +
+   tm_fill("goldenrod", alpha = 0.2)
+```
+
+## Impact responses
+Hover over the map for individual responses.
+```{r}
+impact_types <- read_csv(here("data", "adverse_impacts_responses.csv")) %>% slice(-1)
+impact_types <- merge(impact_types, respondents_two)
+
+```
+
+```{r}
+# convert impact responses to sf
+impact_types_sf <- impact_types %>% 
+  st_as_sf(wkt = "wkt", crs = 4326) %>% 
+  select(-geojson)
+```
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "view")
+
+tm_shape(impact_types_sf) +
+   tm_fill("Name", palette = "YlOrRd", alpha = 0.2, id = "What would the adverse impact from disturbance be in this area?")
+```
+
+# Threats
+
+```{r}
+threats <- st_read(here("data", "Map area - Threats", "Map area - Threats - Polygons.shp"))
+
+threats <- merge(threats, respondents)
+```
+
+## Map of overlapping threats
+Each individual corresponds to one layer.
+
+```{r}
+threats_union <- gUnaryUnion(as_Spatial(threats), id = threats$Name) %>%  st_as_sf()
+```
+```{r}
+library(tmap)
+
+tmap_mode(mode = "view")
+
+tm_shape(threats_union) +
+   tm_fill("red", alpha = 0.1)
+```
+
+## Threat responses
+Hover over the map for individual responses.
+
+```{r}
+threat_types <- read_csv(here("data", "threats_responses.csv")) %>% slice(-1)
+threat_types <- merge(threat_types, respondents_two)
+```
+```{r}
+# convert threat responses to sf
+threat_types_sf <- threat_types %>% 
+  st_as_sf(wkt = "wkt", crs = 4326) %>% 
+  select(-geojson)
+```
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "view")
+
+tm_shape(threat_types_sf) +
+   tm_fill("Name", palette = "Reds", alpha = 0.2, id = "What damages would a disturbance cause in this area?")
+```
+
+# Management Priorities
+
+```{r}
+priorities <- st_read(here("data", "Map area - Management Prioritization", "Map area - Management Prioritization - Polygons.shp"))
+
+priorities <- merge(priorities, respondents)
+
+```
+## Map of overlapping management priority areas
+Each individual corresponds to one layer.
+
+```{r}
+priorities_union <- gUnaryUnion(as_Spatial(priorities), id = priorities$Name) %>%  st_as_sf()
+```
+```{r}
+library(tmap)
+
+tmap_mode(mode = "view")
+
+tm_shape(priorities_union) +
+   tm_fill("purple", alpha = 0.1)
+```
+## Priority responses
+Hover over the map for individual responses.
+```{r}
+priority_types <- read_csv(here("data", "priorities_responses.csv")) %>% slice(-1)
+priority_types <- merge(priority_types, respondents_two)
+```
+
+```{r}
+# convert priority responses to sf
+priority_types_sf <-priority_types %>% 
+  st_as_sf(wkt = "wkt", crs = 4326) %>% 
+  select(-geojson)
+```
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "view")
+
+tm_shape(priority_types_sf) +
+   tm_fill("Name", palette = "BuPu", alpha = 0.2, 
+           id = "Why would you prioritize forest management in this area? What forest benefit does your organization value in this area?")
+```
+
+## Priority response by org type
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "view")
+
+tm_shape(priority_types_sf) +
+   tm_fill("Type", palette = "Dark2", alpha = 0.2, 
+           id = "Why would you prioritize forest management in this area? What forest benefit does your organization value in this area?")
+```
+
