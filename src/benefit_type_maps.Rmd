@@ -6,26 +6,27 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 library(tidyverse)
 library(janitor)
 library(here)
 library(sf)
 library(tmap)
+library(kableExtra)
 ```
 
 Data is in the GP Forest Folks folder under the survey/interviews tab - just copy the data folder w/in R data.
 
 # Test to work with categorizing benefits
 
-```{r}
+```{r include = FALSE}
 benefits_test <- read_csv(here("data", "benefit_type_test.csv")) 
 respondents <- read_csv(here("data", "Respondent_names.csv")) 
 benefits_test <- merge(respondents, benefits_test)
 
 ```
 
-# Take data from wide format with categories in columns to categories in rows and drop na values
+### Take data from wide format with categories in columns to categories in rows and drop na values
 
 ```{r}
 benefits_tidy <- benefits_test %>% 
@@ -33,7 +34,7 @@ benefits_tidy <- benefits_test %>%
 
 ```
 
-# Convert benefits_tidy to shapefile
+### Convert benefits_tidy to shapefile
 
 ```{r}
 benefits_tidy_sf <- benefits_tidy %>% 
@@ -41,11 +42,258 @@ benefits_tidy_sf <- benefits_tidy %>%
   select(-geojson)
 ```
 
-# Map benefit categories
+### Map benefit categories
 
 ```{r}
 ggplot(data = benefits_tidy_sf) +
   geom_sf(aes(geometry = wkt), alpha = 0.5) +
   facet_wrap(~ Category, ncol = 4)
 ```
+### END TEST 
 
+# Benefit categories
+
+```{r}
+benefits_categories <- read_csv(here("data", "benefits_categories.csv")) %>% slice(-1)
+respondents <- read_csv(here("data", "Respondent_names.csv")) 
+benefits_categories <- merge(respondents, benefits_categories)
+
+```
+### Take data from wide format with categories in columns to categories in rows and drop na values
+
+```{r}
+benefits_cat_tidy <- benefits_categories %>% 
+  pivot_longer(!1:16, names_to = "Category") %>% drop_na()
+
+```
+
+### Benefits with a value of 1 were listed as primary benefits
+### Benefits with a value of 2 were listed as secondary or co-benefits 
+
+```{r}
+# Which benefits were listed most frequently?
+
+benefit_frequencey <- benefits_cat_tidy %>% 
+  group_by(Category) %>% 
+  summarize(n = n()) %>% 
+  arrange(-n)
+
+# Visualize table. 
+
+benefit_frequencey %>% 
+  kable(col.names = c("Category", "Count")) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = FALSE)
+
+```
+
+```{r}
+# What about when you account for primary vs. secondary benefits?
+benefit_freq_order <- benefits_cat_tidy %>% 
+  group_by(Category, value) %>% 
+  summarize(n = n()) %>% 
+  arrange(value, -n)
+
+# Visualize table. 
+
+benefit_freq_order %>% 
+  kable(col.names = c("Category", "Primary / Secondary", "Count")) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = FALSE)
+
+```
+### Visualize benefits
+
+### Convert benefits_tidy to shapefile
+
+```{r}
+benefits_cat_tidy_sf <- benefits_cat_tidy %>% 
+  st_as_sf(wkt = "wkt", crs = 4326) %>% 
+  select(-geojson) %>% 
+  mutate(value = case_when(
+    value == 1 ~"Primary",
+    value == 2 ~ "Secondary"
+  ))
+```
+
+### Map benefit categories
+
+```{r fig.align= 'center'}
+ggplot(data = benefits_cat_tidy_sf) +
+  geom_sf(aes(geometry = wkt, fill = value), alpha = 0.5) +
+  facet_wrap(~ Category, ncol = 8) 
+```
+
+# Adverse impacts categories
+
+```{r}
+impacts_categories <- read_csv(here("data", "adverse_impacts_categories.csv"))
+impacts_categories <- merge(respondents, impacts_categories)
+
+```
+
+### Take data from wide format with categories in columns to categories in rows and drop na values
+
+```{r}
+impacts_cat_tidy <- impacts_categories %>% 
+  pivot_longer(!1:16, names_to = "Category") %>% drop_na()
+
+```
+
+### Impacts with a value of 1 were listed as primary impacts
+### Impacts with a value of 2 were listed as secondary or impacts 
+
+```{r}
+# Which impacts were listed most frequently?
+
+impact_frequencey <- impacts_cat_tidy %>% 
+  group_by(Category) %>% 
+  summarize(n = n()) %>% 
+  arrange(-n)
+
+# Visualize table. 
+
+impact_frequencey %>% 
+  kable(col.names = c("Category", "Count")) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = FALSE)
+
+```
+
+```{r}
+# What about when you account for primary vs. secondary impacts?
+impact_freq_order <- impacts_cat_tidy %>% 
+  group_by(Category, value) %>% 
+  summarize(n = n()) %>% 
+  arrange(value, -n)
+
+# Visualize table. 
+
+impact_freq_order %>% 
+  kable(col.names = c("Category", "Primary / Secondary", "Count")) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = FALSE)
+
+```
+### Visualize impacts
+
+### Convert impacts_tidy to shapefile
+
+```{r}
+impacts_cat_tidy_sf <- impacts_cat_tidy %>% 
+  st_as_sf(wkt = "wkt", crs = 4326) %>% 
+  select(-geojson) %>% 
+  mutate(value = case_when(
+    value == 1 ~"Primary",
+    value == 2 ~ "Secondary"
+  ))
+```
+
+### Map impact categories
+
+```{r fig.align='center'}
+ggplot(data = impacts_cat_tidy_sf) +
+  geom_sf(aes(geometry = wkt, fill = value), alpha = 0.5) +
+  facet_wrap(~ Category, ncol = 7) 
+```
+
+# Threats categories
+
+```{r}
+threats_categories <- read_csv(here("data", "threats_categories.csv")) %>% slice(-1)
+threats_categories <- merge(respondents, threats_categories)
+
+```
+
+### Take data from wide format with categories in columns to categories in rows and drop na values
+
+```{r}
+threats_cat_tidy <- threats_categories %>% 
+  pivot_longer(!1:15, names_to = "Category") %>% drop_na()
+
+```
+
+```{r}
+# Which threats were listed most frequently?
+
+threat_frequencey <- threats_cat_tidy %>% 
+  group_by(Category) %>% 
+  summarize(n = n()) %>% 
+  arrange(-n)
+
+# Visualize table. 
+
+threat_frequencey %>% 
+  kable(col.names = c("Category", "Count")) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = FALSE)
+
+```
+
+### Visualize threats
+
+### Convert threats_tidy to shapefile
+
+```{r}
+threats_cat_tidy_sf <- threats_cat_tidy %>% 
+  st_as_sf(wkt = "wkt", crs = 4326) %>% 
+  select(-geojson) %>% 
+  mutate(value = case_when(
+    value == 1 ~"Primary"))
+```
+
+### Map impact categories
+
+```{r fig.align='center'}
+ggplot(data = threats_cat_tidy_sf) +
+  geom_sf(aes(geometry = wkt, fill = value), alpha = 0.5) +
+  facet_wrap(~ Category, ncol = 7) 
+```
+
+
+# Mgmt priority categories
+
+```{r}
+priorities_categories <- read_csv(here("data", "mgmt_prioritization_categories.csv")) 
+priorities_categories <- merge(respondents, priorities_categories)
+
+```
+
+### Take data from wide format with categories in columns to categories in rows and drop na values
+
+```{r}
+priorities_cat_tidy <- priorities_categories %>% 
+  pivot_longer(!1:15, names_to = "Category") %>% drop_na()
+
+```
+
+```{r}
+# Which mgmt priorities were listed most frequently?
+
+priorities_frequencey <- priorities_cat_tidy %>% 
+  group_by(Category) %>% 
+  summarize(n = n()) %>% 
+  arrange(-n)
+
+# Visualize table. 
+
+priorities_frequencey %>% 
+  kable(col.names = c("Category", "Count")) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = FALSE)
+
+```
+
+### Visualize mgmt priorities
+
+### Convert priorities_tidy to shapefile
+
+```{r}
+priorities_cat_tidy_sf <- priorities_cat_tidy %>% 
+  st_as_sf(wkt = "wkt", crs = 4326) %>% 
+  select(-geojson) %>% 
+  mutate(value = case_when(
+    value == 1 ~"Primary"))
+```
+
+### Map mgmt priorities
+
+```{r fig.align='center'}
+ggplot(data = priorities_cat_tidy_sf) +
+  geom_sf(aes(geometry = wkt, fill = value), alpha = 0.5) +
+  facet_wrap(~ Category, ncol = 7) 
+```
