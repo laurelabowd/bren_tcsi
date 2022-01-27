@@ -12,6 +12,8 @@ library(janitor)
 library(here)
 library(sf)
 library(tmap)
+library(terra)
+library(raster)
 library(kableExtra)
 ```
 
@@ -121,6 +123,71 @@ ggplot(data = benefits_cat_tidy_sf) +
   geom_sf(aes(geometry = wkt, fill = value), alpha = 0.5) +
   facet_wrap(~ Category, ncol = 8) 
 ```
+
+### Raster maps of benefit count
+
+```{r}
+# Teale Albers projection in meters. 
+#TA <- CRS("+proj=aea +lat_1=34 +lat_2=40.5 +lat_0=0 +lon_0=-120 +x_0=0 +y_0=-4000000 +datum=WGS84 +units=m")
+
+# Create field in benefits_cat_tidy_sf (this is what rasterize will count)
+benefits_cat_tidy_sf_field <- benefits_cat_tidy_sf %>% mutate("field" = 1) %>% st_transform(crs = 3310)
+
+# Create raster template 
+raster_template_benefit <- rast(ext(-139898.783514861, 151851.181894269, -211402.352889147, 317078.385940864), resolution = 1000, crs = st_crs(benefits_cat_tidy_sf_field)$wkt)
+                                
+
+# Create raster map with count of benefits (field)
+raster_benefts <- rasterize(vect(benefits_cat_tidy_sf_field), raster_template_benefit,
+                            field = "field", fun = sum)
+```
+
+
+```{r}
+plot(raster_benefts)  ## Only get single raster
+```
+
+
+### Need to get each polygon as raster.
+
+```{r}
+benefits_individual <- split(benefits_cat_tidy_sf_field, benefits_cat_tidy_sf_field$wkt)
+
+```
+
+```{r}
+# Create raster map with count of benefits (field)
+# Sample for one row
+raster_benefits_1 <- terra::rasterize(vect(benefits_cat_tidy_sf_field[1,]), raster_template_benefit)
+```
+
+```{r}
+plot(raster_benefits_1*3) # checked raster math works
+```
+
+```{r}
+# create empty raster stack to store objects
+benefit_stack <- stack()
+
+
+# Create loop to stack each raster layer (each individual polygon)
+for (x in 1:116) {
+  benefit_layer <- terra::rasterize(vect(benefits_cat_tidy_sf_field[x,]), raster_template_benefit)
+  benefit_stack <- raster::stack(benefit_stack, as(benefit_layer, "Raster"))
+}
+```
+
+
+```{r}
+# Sum layers
+benefits_sum_2 <- calc(benefit_stack, fun = sum, na.rm = TRUE)
+```
+
+```{r}
+# Plot summation 
+plot(benefits_sum_2)
+```
+
 
 # Adverse impacts categories
 
