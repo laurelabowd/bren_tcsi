@@ -88,12 +88,20 @@ benefits_union <- gUnaryUnion(as_Spatial(benefits), id = benefits$Name) %>%  st_
 Each individual corresponds to one layer.
 
 ```{r}
+# TCSI boundary
+tcsi <- st_read(here("data", "TCSI_boundary", "Tahoe-Central_Sierra_Initiative.shp"))
+
+```
+
+```{r}
 library(tmap)
 
 tmap_mode(mode = "view")
 
 tm_shape(benefits_union) +
-   tm_fill("blue", alpha = 0.1)
+   tm_fill("blue", alpha = 0.1) +
+tm_shape(tcsi) +
+  tm_borders()
 ```
 
 
