@@ -102,6 +102,10 @@ benefit_freq_order %>%
   kable_styling(bootstrap_options = "striped", full_width = FALSE)
 
 ```
+
+### Export tidy categories file
+
+
 ### Visualize benefits
 
 ### Convert benefits_tidy to shapefile
@@ -109,12 +113,13 @@ benefit_freq_order %>%
 ```{r}
 benefits_cat_tidy_sf <- benefits_cat_tidy %>% 
   st_as_sf(wkt = "wkt", crs = 4326) %>% 
-  select(-geojson) %>% 
+  dplyr::select(-geojson) %>% 
   mutate(value = case_when(
     value == 1 ~"Primary",
     value == 2 ~ "Secondary"
   ))
 ```
+
 
 ### Map benefit categories
 
@@ -138,13 +143,13 @@ raster_template_benefit <- rast(ext(-139898.783514861, 151851.181894269, -211402
                                 
 
 # Create raster map with count of benefits (field)
-raster_benefts <- rasterize(vect(benefits_cat_tidy_sf_field), raster_template_benefit,
-                            field = "field", fun = sum)
+#raster_benefts <- terra::rasterize(vect(benefits_cat_tidy_sf_field), raster_template_benefit,
+                            #field = "field", fun = sum)
 ```
 
 
 ```{r}
-plot(raster_benefts)  ## Only get single raster
+#plot(raster_benefts)  ## Only get single raster
 ```
 
 
@@ -180,12 +185,70 @@ for (x in 1:116) {
 
 ```{r}
 # Sum layers
-benefits_sum_2 <- calc(benefit_stack, fun = sum, na.rm = TRUE)
+benefits_sum_2 <- calc(benefit_stack, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+benefits_sum_2[benefits_sum_2 == 0]<-NA
+
 ```
 
 ```{r}
 # Plot summation 
 plot(benefits_sum_2)
+```
+### Tmap of raster addition
+
+```{r}
+# TCSI boundary
+tcsi <- st_read(here("data", "TCSI_boundary", "Tahoe-Central_Sierra_Initiative.shp"))
+
+# Convert to TA crs
+tcsi <- tcsi %>% 
+  st_transform(crs = 3310)
+```
+```{r}
+# Create basemap
+library(basemaps)
+
+tcsi_bbox = st_bbox(tcsi, crs = st_crs(tcsi))
+
+# Increase size of bbox for space around edges
+tcsi_bbox_large = st_bbox(st_buffer(st_as_sfc(tcsi_bbox), 15000)) 
+
+basemap_gray <- basemap_raster(tcsi_bbox, map_service = "esri",
+                                        map_type = "world_light_gray_base")
+
+basemap_gray_large <- basemap_raster(tcsi_bbox_large, map_service = "esri",
+                                        map_type = "world_light_gray_base")
+
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+benefits_map <- tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefits_sum_2) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Benefit count",
+             style = "cont",
+             breaks = c(1, 5, 15, 25)) +
+tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+tm_layout(title = "TCSI Benefits", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+
+benefits_map
+
+# tmap_save(benefits_map, "benefits_map_count.png")
 ```
 
 
@@ -245,7 +308,7 @@ impact_freq_order %>%
 ```{r}
 impacts_cat_tidy_sf <- impacts_cat_tidy %>% 
   st_as_sf(wkt = "wkt", crs = 4326) %>% 
-  select(-geojson) %>% 
+  dplyr::select(-geojson) %>% 
   mutate(value = case_when(
     value == 1 ~"Primary",
     value == 2 ~ "Secondary"
@@ -259,6 +322,77 @@ ggplot(data = impacts_cat_tidy_sf) +
   geom_sf(aes(geometry = wkt, fill = value), alpha = 0.5) +
   facet_wrap(~ Category, ncol = 7) 
 ```
+
+### Adverse impacts raster map
+
+```{r}
+# Create field in benefits_cat_tidy_sf (this is what rasterize will count)
+impacts_cat_tidy_sf_field <- impacts_cat_tidy_sf %>% mutate("field" = 1) %>% st_transform(crs = 3310)
+
+# Create raster template 
+raster_template_impacts <- rast(ext(-139898.783514861, 151851.181894269, -211402.352889147, 317078.385940864), resolution = 1000, crs = st_crs(impacts_cat_tidy_sf_field)$wkt)
+```
+
+```{r}
+impacts_individual <- split(impacts_cat_tidy_sf_field, impacts_cat_tidy_sf_field$wkt)
+```
+
+```{r}
+# create empty raster stack to store objects
+impacts_stack <- stack()
+
+
+# Create loop to stack each raster layer (each individual polygon)
+for (x in 1:69) {
+  impacts_layer <- terra::rasterize(vect(impacts_cat_tidy_sf_field[x,]), raster_template_impacts)
+  impacts_stack <- raster::stack(impacts_stack, as(impacts_layer, "Raster"))
+}
+```
+
+
+```{r}
+# Sum layers
+impacts_sum <- calc(impacts_stack, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+impacts_sum[impacts_sum == 0]<-NA
+
+```
+
+```{r}
+# Plot summation 
+plot(impacts_sum)
+```
+
+### tmap of raster impacts
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+impacts_map <- tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(impacts_sum) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Adverse impacts count",
+             style = "cont",
+             breaks = c(1, 5, 15, 25)) +
+tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+tm_layout(title = "TCSI adverse impacts", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+
+impacts_map
+
+#tmap_save(impacts_map, "impacts_map_count.png")
+```
+
 
 # Threats categories
 
@@ -299,7 +433,7 @@ threat_frequencey %>%
 ```{r}
 threats_cat_tidy_sf <- threats_cat_tidy %>% 
   st_as_sf(wkt = "wkt", crs = 4326) %>% 
-  select(-geojson) %>% 
+  dplyr::select(-geojson) %>% 
   mutate(value = case_when(
     value == 1 ~"Primary"))
 ```
@@ -312,6 +446,74 @@ ggplot(data = threats_cat_tidy_sf) +
   facet_wrap(~ Category, ncol = 7) 
 ```
 
+### Adverse impacts raster map
+
+```{r}
+# Create field in threats_cat_tidy_sf (this is what rasterize will count)
+threats_cat_tidy_sf_field <- threats_cat_tidy_sf %>% mutate("field" = 1) %>% st_transform(crs = 3310)
+
+# Create raster template 
+raster_template_threats <- rast(ext(-139898.783514861, 151851.181894269, -211402.352889147, 317078.385940864), resolution = 1000, crs = st_crs(threats_cat_tidy_sf_field)$wkt)
+```
+
+```{r}
+threats_individual <- split(threats_cat_tidy_sf_field, threats_cat_tidy_sf_field$wkt)
+```
+
+```{r}
+# create empty raster stack to store objects
+threats_stack <- stack()
+
+
+# Create loop to stack each raster layer (each individual polygon)
+for (x in 1:105) {
+  threats_layer <- terra::rasterize(vect(threats_cat_tidy_sf_field[x,]), raster_template_threats)
+  threats_stack <- raster::stack(threats_stack, as(threats_layer, "Raster"))
+}
+```
+
+```{r}
+# Sum layers
+threats_sum <- calc(threats_stack, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+threats_sum[threats_sum == 0]<-NA
+
+```
+
+```{r}
+# Plot summation 
+plot(threats_sum)
+```
+
+### tmap threats raster map
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+threats_map <- tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(threats_sum) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Threats count",
+             style = "cont",
+             breaks = c(1, 5, 15, 25)) +
+tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+tm_layout(title = "TCSI threats", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+
+threats_map
+
+#tmap_save(threats_map, "threats_map_count.png")
+```
 
 # Mgmt priority categories
 
@@ -352,7 +554,7 @@ priorities_frequencey %>%
 ```{r}
 priorities_cat_tidy_sf <- priorities_cat_tidy %>% 
   st_as_sf(wkt = "wkt", crs = 4326) %>% 
-  select(-geojson) %>% 
+  dplyr::select(-geojson) %>% 
   mutate(value = case_when(
     value == 1 ~"Primary"))
 ```
@@ -364,3 +566,73 @@ ggplot(data = priorities_cat_tidy_sf) +
   geom_sf(aes(geometry = wkt, fill = value), alpha = 0.5) +
   facet_wrap(~ Category, ncol = 7) 
 ```
+
+### Mgmt prioties raster map
+
+```{r}
+# Create field in threats_cat_tidy_sf (this is what rasterize will count)
+priorities_cat_tidy_sf_field <- priorities_cat_tidy_sf %>% mutate("field" = 1) %>% st_transform(crs = 3310)
+
+# Create raster template 
+raster_template_priorities <- rast(ext(-139898.783514861, 151851.181894269, -211402.352889147, 317078.385940864), resolution = 1000, crs = st_crs(priorities_cat_tidy_sf_field)$wkt)
+```
+
+```{r}
+priorities_individual <- split(priorities_cat_tidy_sf_field, priorities_cat_tidy_sf_field$wkt)
+```
+
+```{r}
+# create empty raster stack to store objects
+priorities_stack <- stack()
+
+
+# Create loop to stack each raster layer (each individual polygon)
+for (x in 1:53) {
+  priorities_layer <- terra::rasterize(vect(priorities_cat_tidy_sf_field[x,]), raster_template_priorities)
+  priorities_stack <- raster::stack(priorities_stack, as(priorities_layer, "Raster"))
+}
+```
+
+```{r}
+# Sum layers
+priorities_sum <- calc(priorities_stack, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+priorities_sum[priorities_sum == 0]<-NA
+
+```
+
+```{r}
+# Plot summation 
+plot(priorities_sum)
+```
+
+### tmap priorities raster map
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+priorities_map <- tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(priorities_sum) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Priorities count",
+             style = "cont",
+             breaks = c(1, 5, 15, 25)) +
+tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+tm_layout(title = "TCSI management priorities", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+
+priorities_map
+
+#tmap_save(priorities_map, "priorities_map_count.png")
+```
+
