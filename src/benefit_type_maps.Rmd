@@ -229,7 +229,7 @@ library(tmap)
 
 tmap_mode(mode = "plot")
 
-benefits_map <- tm_shape(basemap_gray_large) +
+benefits_map_nolegend <- tm_shape(basemap_gray_large) +
   tm_rgb() +
 tm_shape(benefits_sum_2) +
    tm_raster(palette = "viridis", alpha = 0.5,
@@ -238,18 +238,50 @@ tm_shape(benefits_sum_2) +
              breaks = c(1, 5, 15, 25)) +
 tm_shape(tcsi) +
   tm_borders("black", lwd = 2) +
-tm_layout(title = "TCSI Benefits", 
+tm_layout(title = "TCSI benefits", 
             title.position = c("right", "top"),
-          title.size = 1.5,
+          title.size = 2,
           title.bg.color = "white",
-          legend.bg.color = "white",
-          frame = TRUE, frame.lwd = 2,
-          legend.position = c("left", "bottom")) 
+          legend.show = FALSE,
+          #legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2)
+          #legend.position = c("left", "bottom")) 
 
-benefits_map
+benefits_map_nolegend
 
-# tmap_save(benefits_map, "benefits_map_count.png")
+#tmap_save(benefits_map_nolegend, "benefits_map_count_nolegend.png")
 ```
+```{r}
+tmap_mode(mode = "plot")
+library(viridis)
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefits_sum_2) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Count",
+             style = "cont",
+             breaks = c(1, 5, 10, 15, 20, 25),
+             legend.is.portrait = FALSE) +
+tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+#tm_layout(title = "TCSI Benefits", 
+          #title.position = c("right", "top"),
+          #title.size = 1.5,
+          #title.bg.color = "white") +
+  tm_layout(legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.outside.position = "bottom",
+          legend.outside = TRUE,
+          legend.outside.size = 0.3, 
+          legend.width = 1,
+          legend.text.size = 1.5,
+          legend.title.size = 2)
+
+```
+
+
+
 
 
 # Adverse impacts categories
@@ -371,7 +403,7 @@ library(tmap)
 
 tmap_mode(mode = "plot")
 
-impacts_map <- tm_shape(basemap_gray_large) +
+impacts_map_nolegend <- tm_shape(basemap_gray_large) +
   tm_rgb() +
 tm_shape(impacts_sum) +
    tm_raster(palette = "viridis", alpha = 0.5,
@@ -382,15 +414,16 @@ tm_shape(tcsi) +
   tm_borders("black", lwd = 2) +
 tm_layout(title = "TCSI adverse impacts", 
             title.position = c("right", "top"),
-          title.size = 1.5,
+          title.size = 2,
           title.bg.color = "white",
-          legend.bg.color = "white",
-          frame = TRUE, frame.lwd = 2,
-          legend.position = c("left", "bottom")) 
+          legend.show = FALSE,
+          #legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2)
+          #legend.position = c("left", "bottom")) ) 
 
-impacts_map
+impacts_map_nolegend
 
-#tmap_save(impacts_map, "impacts_map_count.png")
+#tmap_save(impacts_map_nolegend, "impacts_map_count_nolegend.png")
 ```
 
 
@@ -493,7 +526,7 @@ library(tmap)
 
 tmap_mode(mode = "plot")
 
-threats_map <- tm_shape(basemap_gray_large) +
+threats_map_nolegend <- tm_shape(basemap_gray_large) +
   tm_rgb() +
 tm_shape(threats_sum) +
    tm_raster(palette = "viridis", alpha = 0.5,
@@ -504,15 +537,16 @@ tm_shape(tcsi) +
   tm_borders("black", lwd = 2) +
 tm_layout(title = "TCSI threats", 
             title.position = c("right", "top"),
-          title.size = 1.5,
+          title.size = 2,
           title.bg.color = "white",
-          legend.bg.color = "white",
-          frame = TRUE, frame.lwd = 2,
-          legend.position = c("left", "bottom")) 
+          legend.show = FALSE,
+          #legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2)
+          #legend.position = c("left", "bottom")) ) 
 
-threats_map
+threats_map_nolegend
 
-#tmap_save(threats_map, "threats_map_count.png")
+#tmap_save(threats_map_nolegend, "threats_map_count_nolegend.png")
 ```
 
 # Mgmt priority categories
@@ -614,7 +648,7 @@ library(tmap)
 
 tmap_mode(mode = "plot")
 
-priorities_map <- tm_shape(basemap_gray_large) +
+priorities_map_nolegend <- tm_shape(basemap_gray_large) +
   tm_rgb() +
 tm_shape(priorities_sum) +
    tm_raster(palette = "viridis", alpha = 0.5,
@@ -625,14 +659,15 @@ tm_shape(tcsi) +
   tm_borders("black", lwd = 2) +
 tm_layout(title = "TCSI management priorities", 
             title.position = c("right", "top"),
-          title.size = 1.5,
+          title.size = 2,
           title.bg.color = "white",
-          legend.bg.color = "white",
-          frame = TRUE, frame.lwd = 2,
-          legend.position = c("left", "bottom")) 
+          legend.show = FALSE,
+          #legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2)
+          #legend.position = c("left", "bottom")) )) 
 
-priorities_map
+priorities_map_nolegend
 
-#tmap_save(priorities_map, "priorities_map_count.png")
+# tmap_save(priorities_map_nolegend, "priorities_map_count_nolegendf.png")
 ```
 
