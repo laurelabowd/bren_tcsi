@@ -238,7 +238,7 @@ tm_shape(benefits_sum_2) +
              breaks = c(1, 5, 15, 25)) +
 tm_shape(tcsi) +
   tm_borders("black", lwd = 2) +
-tm_layout(title = "TCSI benefits", 
+tm_layout(title = "Benefits", 
             title.position = c("right", "top"),
           title.size = 2,
           title.bg.color = "white",
@@ -249,7 +249,7 @@ tm_layout(title = "TCSI benefits",
 
 benefits_map_nolegend
 
-#tmap_save(benefits_map_nolegend, "benefits_map_count_nolegend.png")
+#tmap_save(benefits_map_nolegend, "benefits_map_count_nolegend_020922.png")
 ```
 ```{r}
 tmap_mode(mode = "plot")
@@ -412,7 +412,7 @@ tm_shape(impacts_sum) +
              breaks = c(1, 5, 15, 25)) +
 tm_shape(tcsi) +
   tm_borders("black", lwd = 2) +
-tm_layout(title = "TCSI adverse impacts", 
+tm_layout(title = "Adverse Impacts", 
             title.position = c("right", "top"),
           title.size = 2,
           title.bg.color = "white",
@@ -423,7 +423,7 @@ tm_layout(title = "TCSI adverse impacts",
 
 impacts_map_nolegend
 
-#tmap_save(impacts_map_nolegend, "impacts_map_count_nolegend.png")
+#tmap_save(impacts_map_nolegend, "impacts_map_count_nolegend_020922.png")
 ```
 
 
@@ -535,7 +535,7 @@ tm_shape(threats_sum) +
              breaks = c(1, 5, 15, 25)) +
 tm_shape(tcsi) +
   tm_borders("black", lwd = 2) +
-tm_layout(title = "TCSI threats", 
+tm_layout(title = "Threats", 
             title.position = c("right", "top"),
           title.size = 2,
           title.bg.color = "white",
@@ -546,7 +546,7 @@ tm_layout(title = "TCSI threats",
 
 threats_map_nolegend
 
-#tmap_save(threats_map_nolegend, "threats_map_count_nolegend.png")
+#tmap_save(threats_map_nolegend, "threats_map_count_nolegend_020922.png")
 ```
 
 # Mgmt priority categories
@@ -657,7 +657,7 @@ tm_shape(priorities_sum) +
              breaks = c(1, 5, 15, 25)) +
 tm_shape(tcsi) +
   tm_borders("black", lwd = 2) +
-tm_layout(title = "TCSI management priorities", 
+tm_layout(title = "Management Priorities", 
             title.position = c("right", "top"),
           title.size = 2,
           title.bg.color = "white",
@@ -668,6 +668,6 @@ tm_layout(title = "TCSI management priorities",
 
 priorities_map_nolegend
 
-# tmap_save(priorities_map_nolegend, "priorities_map_count_nolegendf.png")
+#tmap_save(priorities_map_nolegend, "priorities_map_count_nolegend_020922.png")
 ```
 
