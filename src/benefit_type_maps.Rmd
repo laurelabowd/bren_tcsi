@@ -65,7 +65,7 @@ benefits_categories <- merge(respondents, benefits_categories)
 
 ```{r}
 benefits_cat_tidy <- benefits_categories %>% 
-  pivot_longer(!1:16, names_to = "Category") %>% drop_na()
+  pivot_longer(!1:16, names_to = "Category") %>% drop_na(value)
 
 ```
 
@@ -176,7 +176,7 @@ benefit_stack <- stack()
 
 
 # Create loop to stack each raster layer (each individual polygon)
-for (x in 1:116) {
+for (x in 1:171) {
   benefit_layer <- terra::rasterize(vect(benefits_cat_tidy_sf_field[x,]), raster_template_benefit)
   benefit_stack <- raster::stack(benefit_stack, as(benefit_layer, "Raster"))
 }
@@ -234,20 +234,21 @@ benefits_map_nolegend <- tm_shape(basemap_gray_large) +
 tm_shape(benefits_sum_2) +
    tm_raster(palette = "viridis", alpha = 0.5,
              title="Benefit count",
-             style = "cont",
-             breaks = c(1, 5, 15, 25)) +
+             style = "cont") +
 tm_shape(tcsi) +
   tm_borders("black", lwd = 2) +
 tm_layout(title = "Benefits", 
             title.position = c("right", "top"),
           title.size = 2,
           title.bg.color = "white",
-          legend.show = FALSE,
-          #legend.bg.color = "white",
-          frame = TRUE, frame.lwd = 2)
-          #legend.position = c("left", "bottom")) 
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
 
 benefits_map_nolegend
+
+#breaks = c(1, 5, 15, 25)
 
 #tmap_save(benefits_map_nolegend, "benefits_map_count_nolegend_020922.png")
 ```
