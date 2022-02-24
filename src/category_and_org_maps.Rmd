@@ -586,7 +586,7 @@ tm_shape(benefits_sum_nonprofit) +
    tm_raster(palette = "viridis", alpha = 0.5,
              title="Benefit count",
              style = "cont",
-             breaks = c(1, 10, 20, 30, 40)) +  # breaks match benefits breaks
+             breaks = c(1, 5, 10, 20, 30)) +  # breaks match benefits breaks
   tm_shape(tcsi) +
   tm_borders("black", lwd = 2) +
   tm_layout(title = "Nonprofit", 
@@ -721,6 +721,74 @@ tm_shape(benefits_sum_tribal) +
   tm_shape(tcsi) +
   tm_borders("black", lwd = 2) +
   tm_layout(title = "Tribal", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+```
+
+```{r}
+# Federal and tribal together
+
+benefit_stack_fed_tribal <- stack(benefit_stack_fed, benefit_stack_tribal)
+benefit_sum_fed_tribal <- calc(benefit_stack_fed_tribal, fun = sum, na.rm = TRUE)
+benefit_sum_fed_tribal[benefit_sum_fed_tribal == 0]<-NA
+
+
+```
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefit_sum_fed_tribal) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Benefit count",
+             style = "cont",
+             breaks = c(1, 5, 10, 20, 30)) +  
+  tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+  tm_layout(title = "Federal and Tribal", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+```
+
+```{r}
+# Other and state and local and regional agency together
+
+benefit_stack_local_state_other <- stack(benefit_stack_local, benefit_stack_state, benefit_stack_other)
+benefit_sum_local_state_other <- calc(benefit_stack_local_state_other, fun = sum, na.rm = TRUE)
+benefit_sum_local_state_other[benefit_sum_local_state_other == 0]<-NA
+
+
+```
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefit_sum_local_state_other) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Benefit count",
+             style = "cont",
+             breaks = c(1, 5, 10, 20, 30)) +  
+  tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+  tm_layout(title = "Local and State Agencies and Other", 
             title.position = c("right", "top"),
           title.size = 1.5,
           title.bg.color = "white",
