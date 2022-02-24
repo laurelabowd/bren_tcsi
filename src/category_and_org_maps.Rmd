@@ -1,0 +1,731 @@
+---
+title: "Interview Maps by Type and Org"
+author: "Laurel Abowd"
+date: "2/23/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(janitor)
+library(here)
+library(sf)
+library(tmap)
+library(terra)
+library(raster)
+library(kableExtra)
+```
+
+# TCSI boundary and basemap
+```{r}
+# TCSI boundary
+tcsi <- st_read(here("data", "TCSI_boundary", "Tahoe-Central_Sierra_Initiative.shp"))
+
+# Convert to TA crs
+tcsi <- tcsi %>% 
+  st_transform(crs = 3310)
+```
+
+```{r}
+# Create basemap
+library(basemaps)
+
+tcsi_bbox = st_bbox(tcsi, crs = st_crs(tcsi))
+
+# Increase size of bbox for space around edges
+tcsi_bbox_large = st_bbox(st_buffer(st_as_sfc(tcsi_bbox), 15000)) 
+
+basemap_gray <- basemap_raster(tcsi_bbox, map_service = "esri",
+                                        map_type = "world_light_gray_base")
+
+basemap_gray_large <- basemap_raster(tcsi_bbox_large, map_service = "esri",
+                                        map_type = "world_light_gray_base")
+
+```
+
+
+# Benefits 
+
+```{r}
+# Read in tidy benefits data from benefit_types_maps.Rmd
+benefits <- read.csv(here("data", "benefits_categories_tidy.csv"))
+```
+
+```{r}
+# Convert to shapefile
+benefits_sf <- benefits %>% 
+  st_as_sf(wkt = "wkt", crs = 4326) %>% 
+  dplyr::select(-geojson) 
+```
+
+## Raster maps of benefit count
+
+```{r}
+# Teale Albers projection in meters. 
+#TA <- CRS("+proj=aea +lat_1=34 +lat_2=40.5 +lat_0=0 +lon_0=-120 +x_0=0 +y_0=-4000000 +datum=WGS84 +units=m")
+
+# Create field in benefits_cat_tidy_sf (this is what rasterize will count)
+benefits_sf_field <- benefits_sf %>% mutate("field" = 1) %>% st_transform(crs = 3310)
+
+# Create raster template 
+raster_template_benefit <- rast(ext(-139898.783514861, 151851.181894269, -211402.352889147, 317078.385940864), resolution = 1000, crs = st_crs(benefits_sf_field)$wkt)
+                                
+```
+
+
+### Need to get each polygon as raster.
+
+```{r}
+benefits_individual <- split(benefits_sf_field, benefits_sf_field$wkt)
+
+benefits_categories <- split(benefits_sf_field, benefits_sf_field$Category)
+
+```
+
+```{r}
+# Create raster map with count of benefits (field)
+# Sample for one row
+raster_benefits_habitat_1 <- terra::rasterize(vect(benefits_categories[["Biodiversity / Habitat"]][[1,17]]), raster_template_benefit) # first row of wkt
+
+raster_benefits_habitat_2 <- terra::rasterize(vect(benefits_categories[["Biodiversity / Habitat"]][[2,17]]), raster_template_benefit) # second row of wkt
+```
+
+```{r}
+plot(raster_benefits_habitat)
+plot(raster_benefits_habitat_2)
+```
+
+```{r}
+# create empty raster stack to store objects
+benefit_stack <- stack()
+
+
+# Create loop to stack each raster layer (each individual polygon)
+for (x in 1:nrow(benefits_sf_field)) {
+  benefit_layer <- terra::rasterize(vect(benefits_sf_field[x,]), raster_template_benefit)
+  benefit_stack <- raster::stack(benefit_stack, as(benefit_layer, "Raster"))
+}
+```
+
+```{r}
+# Benefits for habitat
+benefit_stack_habitat <- stack()
+
+for (x in 1:nrow(benefits_categories[[1]])) {
+  benefit_layer <- terra::rasterize(vect(benefits_categories[[1]][[x,17]]), raster_template_benefit_habitat)
+  stack <- stack()
+  benefit_stack_habitat <- raster::stack(benefit_stack_habitat, as(benefit_layer, "Raster"))
+}
+
+```
+
+```{r}
+# Sum layers
+benefits_sum_habitat <- calc(benefit_stack_habitat, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+benefits_sum_habitat[benefits_sum_habitat == 0]<-NA
+
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefits_sum_habitat) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Count",
+             style = "cont") +
+  tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+  tm_layout(title = "Biodiversity / Habitat", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+```
+
+```{r}
+# Benefits for carbon storage
+benefit_stack_carbon <- stack()
+
+for (x in 1:nrow(benefits_categories[[2]])) {
+  benefit_layer <- terra::rasterize(vect(benefits_categories[[2]][[x,17]]), raster_template_benefit)
+  benefit_stack_carbon <- raster::stack(benefit_stack_carbon, as(benefit_layer, "Raster"))
+}
+
+```
+
+```{r}
+# Sum layers
+benefits_sum_carbon <- calc(benefit_stack_carbon, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+benefits_sum_carbon[benefits_sum_carbon == 0]<-NA
+
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefits_sum_carbon) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Count",
+             style = "cont") +
+  tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+  tm_layout(title = "Carbon Storage", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+```
+
+```{r}
+# Benefits for water quality
+benefit_stack_wq <- stack()
+
+for (x in 1:nrow(benefits_categories[["Water quality"]])) {
+  benefit_layer <- terra::rasterize(vect(benefits_categories[["Water quality"]][[x,17]]), raster_template_benefit)
+  benefit_stack_wq <- raster::stack(benefit_stack_wq, as(benefit_layer, "Raster"))
+}
+```
+
+```{r}
+# Sum layers
+benefits_sum_wq <- calc(benefit_stack_wq, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+benefits_sum_wq[benefits_sum_wq == 0]<-NA
+
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefits_sum_wq) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Count",
+             style = "cont") +
+  tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+  tm_layout(title = "Water Quality", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+```
+
+
+```{r}
+# Benefits for recreation
+benefit_stack_rec <- stack()
+
+for (x in 1:nrow(benefits_categories[["Recreation"]])) {
+  benefit_layer <- terra::rasterize(vect(benefits_categories[["Recreation"]][[x,17]]), raster_template_benefit)
+  benefit_stack_rec <- raster::stack(benefit_stack_rec, as(benefit_layer, "Raster"))
+}
+```
+
+```{r}
+# Sum layers
+benefits_sum_rec <- calc(benefit_stack_rec, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+benefits_sum_rec[benefits_sum_rec == 0]<-NA
+
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefits_sum_rec) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Count",
+             style = "cont",
+             breaks = c(1, 2, 3, 4, 5)) +
+  tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+  tm_layout(title = "Recreation", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+```
+
+```{r}
+# Benefits for general forest health
+benefit_stack_health <- stack()
+
+for (x in 1:nrow(benefits_categories[["General forest health and resilience"]])) {
+  benefit_layer <- terra::rasterize(vect(benefits_categories[["General forest health and resilience"]][[x,17]]), raster_template_benefit)
+  benefit_stack_health <- raster::stack(benefit_stack_health, as(benefit_layer, "Raster"))
+}
+```
+
+```{r}
+# Sum layers
+benefits_sum_health <- calc(benefit_stack_health, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+benefits_sum_health[benefits_sum_health == 0]<-NA
+
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefits_sum_health) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Count",
+             style = "cont") +
+  tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+  tm_layout(title = "General forest health", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+```
+```{r}
+# Benefits for water supply
+benefit_stack_ws <- stack()
+
+for (x in 1:nrow(benefits_categories[["Water supply"]])) {
+  benefit_layer <- terra::rasterize(vect(benefits_categories[["Water supply"]][[x,17]]), raster_template_benefit)
+  benefit_stack_ws <- raster::stack(benefit_stack_ws, as(benefit_layer, "Raster"))
+}
+```
+
+```{r}
+# Sum layers
+benefits_sum_ws <- calc(benefit_stack_ws, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+benefits_sum_ws[benefits_sum_ws == 0]<-NA
+
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefits_sum_ws) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Count",
+             style = "cont") +
+  tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+  tm_layout(title = "Water Supply", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+```
+```{r}
+# Benefits for public health
+benefit_stack_ph <- stack()
+
+for (x in 1:nrow(benefits_categories[["Public health and safety"]])) {
+  benefit_layer <- terra::rasterize(vect(benefits_categories[["Public health and safety"]][[x,17]]), raster_template_benefit)
+  benefit_stack_ph <- raster::stack(benefit_stack_ph, as(benefit_layer, "Raster"))
+}
+```
+
+```{r}
+# Sum layers
+benefits_sum_ph <- calc(benefit_stack_ph, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+benefits_sum_ph[benefits_sum_ph == 0]<-NA
+
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+tm_shape(benefits_sum_ph) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Public health and safety",
+             style = "cont")
+```
+
+```{r}
+# Benefits for local community
+benefit_stack_social <- stack()
+
+for (x in 1:nrow(benefits_categories[["Local community and social connections"]])) {
+  benefit_layer <- terra::rasterize(vect(benefits_categories[["Local community and social connections"]][[x,17]]), raster_template_benefit)
+  benefit_stack_social <- raster::stack(benefit_stack_social, as(benefit_layer, "Raster"))
+}
+
+# Benefits for cultural connects - combining these
+benefit_stack_cultural <- stack()
+
+for (x in 1:nrow(benefits_categories[["Cultural connections"]])) {
+  benefit_layer <- terra::rasterize(vect(benefits_categories[["Cultural connections"]][[x,17]]), raster_template_benefit)
+  benefit_stack_cultural <- raster::stack(benefit_stack_cultural, as(benefit_layer, "Raster"))
+}
+```
+
+```{r}
+# Sum layers
+benefits_sum_social <- calc(benefit_stack_social, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+benefits_sum_social[benefits_sum_social == 0]<-NA
+
+# Sum layers
+benefits_sum_cultural <- calc(benefit_stack_cultural, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+benefits_sum_cultural[benefits_sum_cultural == 0]<-NA
+
+# Sum cultural and social
+benefit_stack_cultural_social <- stack(benefit_stack_cultural, benefit_stack_social)
+benefit_sum_cultural_social <- calc(benefit_stack_cultural_social, fun = sum, na.rm = TRUE)
+benefit_sum_cultural_social[benefit_sum_cultural_social == 0]<-NA
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefit_sum_cultural_social) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Count",
+             style = "cont",
+             breaks = c(1, 2, 3, 4, 5)) +
+  tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+  tm_layout(title = "Social and Cultural Values", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+```
+
+# Benefits by Org Type
+
+```{r}
+benefits_org <- split(benefits_sf_field, benefits_sf_field$Type)
+```
+
+```{r}
+# Benefits for federal
+benefit_stack_fed <- stack()
+
+for (x in 1:nrow(benefits_org[["Federal"]])) {
+  benefit_layer <- terra::rasterize(vect(benefits_org[["Federal"]][[x,17]]), raster_template_benefit)
+  benefit_stack_fed <- raster::stack(benefit_stack_fed, as(benefit_layer, "Raster"))
+}
+
+```
+
+```{r}
+# Sum layers
+benefits_sum_fed <- calc(benefit_stack_fed, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+benefits_sum_fed[benefits_sum_fed == 0]<-NA
+
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefits_sum_fed) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Benefit count",
+             style = "cont") +
+  tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+  tm_layout(title = "Federal", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+```
+```{r}
+# Benefits for local or regional agency
+benefit_stack_local <- stack()
+
+for (x in 1:nrow(benefits_org[["Local or regional agency"]])) {
+  benefit_layer <- terra::rasterize(vect(benefits_org[["Local or regional agency"]][[x,17]]), raster_template_benefit)
+  benefit_stack_local <- raster::stack(benefit_stack_local, as(benefit_layer, "Raster"))
+}
+
+```
+
+```{r}
+# Sum layers
+benefits_sum_local <- calc(benefit_stack_local, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+benefits_sum_local[benefits_sum_local == 0]<-NA
+
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefits_sum_local) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Benefit count",
+             style = "cont") +
+  tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+  tm_layout(title = "Local or regional agency", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+```
+```{r}
+# Benefits for nonprofits
+benefit_stack_nonprofit <- stack()
+
+for (x in 1:nrow(benefits_org[["Nonprofit"]])) {
+  benefit_layer <- terra::rasterize(vect(benefits_org[["Nonprofit"]][[x,17]]), raster_template_benefit)
+  benefit_stack_nonprofit <- raster::stack(benefit_stack_nonprofit, as(benefit_layer, "Raster"))
+}
+
+```
+
+```{r}
+# Sum layers
+benefits_sum_nonprofit <- calc(benefit_stack_nonprofit, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+benefits_sum_nonprofit[benefits_sum_nonprofit == 0]<-NA
+
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefits_sum_nonprofit) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Benefit count",
+             style = "cont",
+             breaks = c(1, 10, 20, 30, 40)) +  # breaks match benefits breaks
+  tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+  tm_layout(title = "Nonprofit", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+```
+```{r}
+# Benefits for other (Open Canopy LLC)
+benefit_stack_other <- stack()
+
+for (x in 1:nrow(benefits_org[["Other"]])) {
+  benefit_layer <- terra::rasterize(vect(benefits_org[["Other"]][[x,17]]), raster_template_benefit)
+  benefit_stack_other <- raster::stack(benefit_stack_other, as(benefit_layer, "Raster"))
+}
+
+```
+
+```{r}
+# Sum layers
+benefits_sum_other <- calc(benefit_stack_other, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+benefits_sum_other[benefits_sum_other == 0]<-NA
+
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefits_sum_other) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Benefit count",
+             style = "cont") +  
+  tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+  tm_layout(title = "Other", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+```
+
+```{r}
+# Benefits for state (Sierra Nevada Conservancy)
+benefit_stack_state <- stack()
+
+for (x in 1:nrow(benefits_org[["State agency"]])) {
+  benefit_layer <- terra::rasterize(vect(benefits_org[["State agency"]][[x,17]]), raster_template_benefit)
+  benefit_stack_state <- raster::stack(benefit_stack_state, as(benefit_layer, "Raster"))
+}
+
+```
+
+```{r}
+# Sum layers
+benefits_sum_state <- calc(benefit_stack_state, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+benefits_sum_state[benefits_sum_state == 0]<-NA
+
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefits_sum_state) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Benefit count",
+             style = "cont") +  
+  tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+  tm_layout(title = "State agency", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+```
+
+```{r}
+# Benefits for tribal (Resident/UAIC Employee)
+benefit_stack_tribal <- stack()
+
+for (x in 1:nrow(benefits_org[["Tribal"]])) {
+  benefit_layer <- terra::rasterize(vect(benefits_org[["Tribal"]][[x,17]]), raster_template_benefit)
+  benefit_stack_tribal <- raster::stack(benefit_stack_tribal, as(benefit_layer, "Raster"))
+}
+
+```
+
+```{r}
+# Sum layers
+benefits_sum_tribal <- calc(benefit_stack_tribal, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+benefits_sum_tribal[benefits_sum_tribal == 0]<-NA
+
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefits_sum_tribal) +
+   tm_raster(palette = "viridis", alpha = 0.5,
+             title="Benefit count",
+             style = "cont") +  
+  tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+  tm_layout(title = "Tribal", 
+            title.position = c("right", "top"),
+          title.size = 1.5,
+          title.bg.color = "white",
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+```
