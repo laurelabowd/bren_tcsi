@@ -65,9 +65,19 @@ benefits_categories <- merge(respondents, benefits_categories)
 
 ```{r}
 benefits_cat_tidy <- benefits_categories %>% 
-  pivot_longer(!1:16, names_to = "Category") %>% drop_na(value)
+  pivot_longer(!1:16, names_to = "Category") %>% drop_na(value) %>% 
+  mutate(value = case_when(
+    value == 1 ~"Primary",
+    value == 2 ~ "Secondary"
+  ))
 
 ```
+
+```{r}
+# Export benefits categories tidy file
+# write_csv(benefits_cat_tidy, "benefits_categories_tidy.csv")
+```
+
 
 ### Benefits with a value of 1 were listed as primary benefits
 ### Benefits with a value of 2 were listed as secondary or co-benefits 
