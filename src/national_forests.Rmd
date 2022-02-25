@@ -15,19 +15,22 @@ library(sf)
 
 ```{r}
 # Read in US national forest files
-national_forests <- st_read(here("data", "S_USA.AdministrativeForest", "S_USA.AdministrativeForest.shp"))
+national_forests <- st_read(here("data", "S_USA.AdministrativeForest.gdb"))
 ```
 ```{r}
 # Eldorado National Forest
 eldorado <- national_forests %>% 
-  filter(FORESTNAME == "Eldorado National Forest")
+  filter(FORESTNAME == "Eldorado National Forest") %>% st_transform(crs = 3310)
 ```
 
 ```{r}
 plot(eldorado)
 ```
 
+
+
 ```{r}
-st_write(eldorado, "eldorado.shp", drive="ESRI Shapefile")
+st_write(eldorado, "eldorado_3310.shp", drive="ESRI Shapefile")
 ```
+
 
