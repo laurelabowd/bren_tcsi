@@ -1,0 +1,33 @@
+---
+title: "Eldorado National Forest"
+author: "Laurel Abowd"
+date: "2/24/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(sf)
+
+```
+
+```{r}
+# Read in US national forest files
+national_forests <- st_read(here("data", "S_USA.AdministrativeForest", "S_USA.AdministrativeForest.shp"))
+```
+```{r}
+# Eldorado National Forest
+eldorado <- national_forests %>% 
+  filter(FORESTNAME == "Eldorado National Forest")
+```
+
+```{r}
+plot(eldorado)
+```
+
+```{r}
+st_write(eldorado, "eldorado.shp", drive="ESRI Shapefile")
+```
+
