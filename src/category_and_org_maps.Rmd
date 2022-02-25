@@ -113,7 +113,7 @@ for (x in 1:nrow(benefits_sf_field)) {
 benefit_stack_habitat <- stack()
 
 for (x in 1:nrow(benefits_categories[[1]])) {
-  benefit_layer <- terra::rasterize(vect(benefits_categories[[1]][[x,17]]), raster_template_benefit_habitat)
+  benefit_layer <- terra::rasterize(vect(benefits_categories[[1]][[x,17]]), raster_template_benefit)
   stack <- stack()
   benefit_stack_habitat <- raster::stack(benefit_stack_habitat, as(benefit_layer, "Raster"))
 }
@@ -135,23 +135,56 @@ library(tmap)
 
 tmap_mode(mode = "plot")
 
-tm_shape(basemap_gray_large) +
+habitat <- tm_shape(basemap_gray_large) +
   tm_rgb() +
 tm_shape(benefits_sum_habitat) +
-   tm_raster(palette = "viridis", alpha = 0.5,
+   tm_raster(palette = "plasma", alpha = 0.5,
              title="Count",
              style = "cont") +
   tm_shape(tcsi) +
   tm_borders("black", lwd = 2) +
   tm_layout(title = "Biodiversity / Habitat", 
             title.position = c("right", "top"),
-          title.size = 1.5,
+          title.size = 2,
           title.bg.color = "white",
-          legend.show = TRUE,
+          legend.show = FALSE,
           legend.bg.color = "white",
           frame = TRUE, frame.lwd = 2,
-          legend.position = c("left", "bottom")) 
+          legend.position = c("left", "bottom"))
+
+#tmap_save(habitat, "habitat_022422.png")
+
 ```
+
+```{r}
+tmap_mode(mode = "plot")
+library(viridis)
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefits_sum_habitat) +
+   tm_raster(palette = "plasma", alpha = 0.5,
+             title="Count",
+             style = "cont",
+             breaks = c(1, 2, 3, 4, 5),
+             legend.is.portrait = FALSE) +
+tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+#tm_layout(title = "TCSI Benefits", 
+          #title.position = c("right", "top"),
+          #title.size = 1.5,
+          #title.bg.color = "white") +
+  tm_layout(legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.outside.position = "bottom",
+          legend.outside = TRUE,
+          legend.outside.size = 0.3, 
+          legend.width = 1,
+          legend.text.size = 1.5,
+          legend.title.size = 2)
+```
+
+
 
 ```{r}
 # Benefits for carbon storage
@@ -222,22 +255,24 @@ library(tmap)
 
 tmap_mode(mode = "plot")
 
-tm_shape(basemap_gray_large) +
+wq <- tm_shape(basemap_gray_large) +
   tm_rgb() +
 tm_shape(benefits_sum_wq) +
-   tm_raster(palette = "viridis", alpha = 0.5,
+   tm_raster(palette = "plasma", alpha = 0.5,
              title="Count",
              style = "cont") +
   tm_shape(tcsi) +
   tm_borders("black", lwd = 2) +
   tm_layout(title = "Water Quality", 
             title.position = c("right", "top"),
-          title.size = 1.5,
+          title.size = 2,
           title.bg.color = "white",
-          legend.show = TRUE,
+          legend.show = FALSE,
           legend.bg.color = "white",
           frame = TRUE, frame.lwd = 2,
           legend.position = c("left", "bottom")) 
+
+#tmap_save(wq, "wq_022422.png")
 ```
 
 
@@ -266,10 +301,10 @@ library(tmap)
 
 tmap_mode(mode = "plot")
 
-tm_shape(basemap_gray_large) +
+rec <- tm_shape(basemap_gray_large) +
   tm_rgb() +
 tm_shape(benefits_sum_rec) +
-   tm_raster(palette = "viridis", alpha = 0.5,
+   tm_raster(palette = "plasma", alpha = 0.5,
              title="Count",
              style = "cont",
              breaks = c(1, 2, 3, 4, 5)) +
@@ -277,12 +312,14 @@ tm_shape(benefits_sum_rec) +
   tm_borders("black", lwd = 2) +
   tm_layout(title = "Recreation", 
             title.position = c("right", "top"),
-          title.size = 1.5,
+          title.size = 2,
           title.bg.color = "white",
-          legend.show = TRUE,
+          legend.show = FALSE,
           legend.bg.color = "white",
           frame = TRUE, frame.lwd = 2,
-          legend.position = c("left", "bottom")) 
+          legend.position = c("left", "bottom"))
+
+#tmap_save(rec, "rec_022422.png")
 ```
 
 ```{r}
@@ -310,22 +347,26 @@ library(tmap)
 
 tmap_mode(mode = "plot")
 
-tm_shape(basemap_gray_large) +
+forest_health <- tm_shape(basemap_gray_large) +
   tm_rgb() +
 tm_shape(benefits_sum_health) +
-   tm_raster(palette = "viridis", alpha = 0.5,
+   tm_raster(palette = "plasma", alpha = 0.5,
              title="Count",
              style = "cont") +
   tm_shape(tcsi) +
   tm_borders("black", lwd = 2) +
-  tm_layout(title = "General forest health", 
+  tm_layout(title = "General Forest Health", 
             title.position = c("right", "top"),
-          title.size = 1.5,
+          title.size = 2,
           title.bg.color = "white",
-          legend.show = TRUE,
+          legend.show = FALSE,
           legend.bg.color = "white",
           frame = TRUE, frame.lwd = 2,
-          legend.position = c("left", "bottom")) 
+          legend.position = c("left", "bottom"))
+
+
+#tmap_save(forest_health, "forest_health_022422.png")
+
 ```
 ```{r}
 # Benefits for water supply
@@ -352,22 +393,25 @@ library(tmap)
 
 tmap_mode(mode = "plot")
 
-tm_shape(basemap_gray_large) +
+ws <- tm_shape(basemap_gray_large) +
   tm_rgb() +
 tm_shape(benefits_sum_ws) +
-   tm_raster(palette = "viridis", alpha = 0.5,
+   tm_raster(palette = "plasma", alpha = 0.5,
              title="Count",
              style = "cont") +
   tm_shape(tcsi) +
   tm_borders("black", lwd = 2) +
   tm_layout(title = "Water Supply", 
             title.position = c("right", "top"),
-          title.size = 1.5,
+          title.size = 2,
           title.bg.color = "white",
-          legend.show = TRUE,
+          legend.show = FALSE,
           legend.bg.color = "white",
           frame = TRUE, frame.lwd = 2,
           legend.position = c("left", "bottom")) 
+
+#tmap_save(ws, "ws_022422.png")
+
 ```
 ```{r}
 # Benefits for public health
@@ -443,10 +487,10 @@ library(tmap)
 
 tmap_mode(mode = "plot")
 
-tm_shape(basemap_gray_large) +
+social_cultural <- tm_shape(basemap_gray_large) +
   tm_rgb() +
 tm_shape(benefit_sum_cultural_social) +
-   tm_raster(palette = "viridis", alpha = 0.5,
+   tm_raster(palette = "plasma", alpha = 0.5,
              title="Count",
              style = "cont",
              breaks = c(1, 2, 3, 4, 5)) +
@@ -454,12 +498,14 @@ tm_shape(benefit_sum_cultural_social) +
   tm_borders("black", lwd = 2) +
   tm_layout(title = "Social and Cultural Values", 
             title.position = c("right", "top"),
-          title.size = 1.5,
+          title.size = 2,
           title.bg.color = "white",
-          legend.show = TRUE,
+          legend.show = FALSE,
           legend.bg.color = "white",
           frame = TRUE, frame.lwd = 2,
           legend.position = c("left", "bottom")) 
+
+#tmap_save(social_cultural, "social_cultural_022422.png")
 ```
 
 # Benefits by Org Type
@@ -580,24 +626,58 @@ library(tmap)
 
 tmap_mode(mode = "plot")
 
-tm_shape(basemap_gray_large) +
+nonprofit <- tm_shape(basemap_gray_large) +
   tm_rgb() +
 tm_shape(benefits_sum_nonprofit) +
-   tm_raster(palette = "viridis", alpha = 0.5,
+   tm_raster(palette = "plasma", alpha = 0.5,
              title="Benefit count",
              style = "cont",
-             breaks = c(1, 5, 10, 20, 30)) +  # breaks match benefits breaks
+             breaks = c(1, 5, 10, 20, 30)) +  
   tm_shape(tcsi) +
   tm_borders("black", lwd = 2) +
   tm_layout(title = "Nonprofit", 
             title.position = c("right", "top"),
-          title.size = 1.5,
+          title.size = 2,
           title.bg.color = "white",
-          legend.show = TRUE,
+          legend.show = FALSE,
           legend.bg.color = "white",
           frame = TRUE, frame.lwd = 2,
           legend.position = c("left", "bottom")) 
+
+#tmap_save(nonprofit, "nonprofit_022422.png")
+
 ```
+
+```{r}
+tmap_mode(mode = "plot")
+library(viridis)
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefits_sum_nonprofit) +
+   tm_raster(palette = "plasma", alpha = 0.5,
+             title="Count",
+             style = "cont",
+             breaks = c(1, 5, 10, 20, 30),
+             legend.is.portrait = FALSE) +
+tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+#tm_layout(title = "TCSI Benefits", 
+          #title.position = c("right", "top"),
+          #title.size = 1.5,
+          #title.bg.color = "white") +
+  tm_layout(legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.outside.position = "bottom",
+          legend.outside = TRUE,
+          legend.outside.size = 0.3, 
+          legend.width = 1,
+          legend.text.size = 1.5,
+          legend.title.size = 2)
+```
+
+
+
 ```{r}
 # Benefits for other (Open Canopy LLC)
 benefit_stack_other <- stack()
@@ -608,6 +688,7 @@ for (x in 1:nrow(benefits_org[["Other"]])) {
 }
 
 ```
+
 
 ```{r}
 # Sum layers
@@ -745,10 +826,10 @@ library(tmap)
 
 tmap_mode(mode = "plot")
 
-tm_shape(basemap_gray_large) +
+fed_tribal <- tm_shape(basemap_gray_large) +
   tm_rgb() +
 tm_shape(benefit_sum_fed_tribal) +
-   tm_raster(palette = "viridis", alpha = 0.5,
+   tm_raster(palette = "plasma", alpha = 0.5,
              title="Benefit count",
              style = "cont",
              breaks = c(1, 5, 10, 20, 30)) +  
@@ -756,12 +837,15 @@ tm_shape(benefit_sum_fed_tribal) +
   tm_borders("black", lwd = 2) +
   tm_layout(title = "Federal and Tribal", 
             title.position = c("right", "top"),
-          title.size = 1.5,
+          title.size = 2,
           title.bg.color = "white",
-          legend.show = TRUE,
+          legend.show = FALSE,
           legend.bg.color = "white",
           frame = TRUE, frame.lwd = 2,
           legend.position = c("left", "bottom")) 
+
+#tmap_save(fed_tribal, "fed_tribal_022422.png")
+
 ```
 
 ```{r}
@@ -779,10 +863,10 @@ library(tmap)
 
 tmap_mode(mode = "plot")
 
-tm_shape(basemap_gray_large) +
+state_local_other <- tm_shape(basemap_gray_large) +
   tm_rgb() +
 tm_shape(benefit_sum_local_state_other) +
-   tm_raster(palette = "viridis", alpha = 0.5,
+   tm_raster(palette = "plasma", alpha = 0.5,
              title="Benefit count",
              style = "cont",
              breaks = c(1, 5, 10, 20, 30)) +  
@@ -790,10 +874,13 @@ tm_shape(benefit_sum_local_state_other) +
   tm_borders("black", lwd = 2) +
   tm_layout(title = "Local and State Agencies and Other", 
             title.position = c("right", "top"),
-          title.size = 1.5,
+          title.size = 2,
           title.bg.color = "white",
-          legend.show = TRUE,
+          legend.show = FALSE,
           legend.bg.color = "white",
           frame = TRUE, frame.lwd = 2,
           legend.position = c("left", "bottom")) 
+
+#tmap_save(state_local_other, "state_local_other_022422.png")
+
 ```

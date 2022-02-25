@@ -242,7 +242,7 @@ tmap_mode(mode = "plot")
 benefits_map_nolegend <- tm_shape(basemap_gray_large) +
   tm_rgb() +
 tm_shape(benefits_sum_2) +
-   tm_raster(palette = "viridis", alpha = 0.5,
+   tm_raster(palette = "inferno", alpha = 0.5,
              title="Benefit count",
              style = "cont",
              breaks = c(1, 10, 20, 30, 40)) +
@@ -252,7 +252,7 @@ tm_layout(title = "Benefits",
             title.position = c("right", "top"),
           title.size = 2,
           title.bg.color = "white",
-          legend.show = TRUE,
+          legend.show = FALSE,
           legend.bg.color = "white",
           frame = TRUE, frame.lwd = 2,
           legend.position = c("left", "bottom")) 
@@ -261,8 +261,9 @@ benefits_map_nolegend
 
 #breaks = c(1, 5, 15, 25)
 
-#tmap_save(benefits_map_nolegend, "benefits_map_count_nolegend_020922.png")
+# tmap_save(benefits_map_nolegend, "benefits_map_count_nolegend_022422.png")
 ```
+
 ```{r}
 tmap_mode(mode = "plot")
 library(viridis)
@@ -270,10 +271,10 @@ library(viridis)
 tm_shape(basemap_gray_large) +
   tm_rgb() +
 tm_shape(benefits_sum_2) +
-   tm_raster(palette = "viridis", alpha = 0.5,
+   tm_raster(palette = "inferno", alpha = 0.5,
              title="Count",
              style = "cont",
-             breaks = c(1, 5, 10, 15, 20, 25),
+             breaks = c(1, 10, 20, 30, 40),
              legend.is.portrait = FALSE) +
 tm_shape(tcsi) +
   tm_borders("black", lwd = 2) +
@@ -428,7 +429,7 @@ tm_layout(title = "Adverse Impacts",
           title.position = c("right", "top"),
           title.size = 2,
           title.bg.color = "white",
-          legend.show = TRUE,
+          legend.show = FALSE,
           legend.bg.color = "white",
           frame = TRUE, frame.lwd = 2,
           legend.position = c("left", "bottom")) 
@@ -437,7 +438,7 @@ impacts_map_nolegend
 
 #breaks = c(1, 5, 15, 25)
 
-#tmap_save(impacts_map_nolegend, "impacts_map_count_nolegend_020922.png")
+#tmap_save(impacts_map_nolegend, "impacts_map_count_nolegend_022422.png")
 ```
 
 
@@ -560,7 +561,7 @@ tm_layout(title = "Threats",
 
 threats_map_nolegend
 
-#tmap_save(threats_map_nolegend, "threats_map_count_nolegend_020922.png")
+#tmap_save(threats_map_nolegend, "threats_map_count_nolegend_022422.png")
 ```
 
 # Mgmt priority categories
@@ -682,6 +683,6 @@ tm_layout(title = "Management Priorities",
 
 priorities_map_nolegend
 
-#tmap_save(priorities_map_nolegend, "priorities_map_count_nolegend_020922.png")
+#tmap_save(priorities_map_nolegend, "priorities_map_count_nolegend_022422.png")
 ```
 
