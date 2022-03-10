@@ -19,6 +19,19 @@ library(rgeos)
 
 Data is in the GP Forest Folks folder under the survey/interviews tab - just copy the data folder w/in R data.
 
+# Organizations
+
+```{r}
+orgs <- st_read(here("data","Map point - Organization Area", "Map point - Organization Area - Points.dbf"))
+respondents <- read_csv(here("data", "Respondent_names.csv"))
+```
+```{r}
+names(respondents)[1] <- "responde"
+orgs <- merge(orgs, respondents)
+```
+
+
+
 # Benefits
 
 ```{r}
@@ -101,7 +114,9 @@ tmap_mode(mode = "view")
 tm_shape(benefits_union) +
    tm_fill("blue", alpha = 0.1) +
 tm_shape(tcsi) +
-  tm_borders()
+  tm_borders() +
+tm_shape(orgs) +
+  tm_dots()
 ```
 
 

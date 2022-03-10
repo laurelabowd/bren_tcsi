@@ -34,13 +34,45 @@ library(basemaps)
 tcsi_bbox = st_bbox(tcsi, crs = st_crs(tcsi))
 
 # Increase size of bbox for space around edges
-tcsi_bbox_large = st_bbox(st_buffer(st_as_sfc(tcsi_bbox), 15000)) 
+tcsi_bbox_large = st_bbox(st_buffer(st_as_sfc(tcsi_bbox), 15000)) #30000 to get that far west org
 
 basemap_gray <- basemap_raster(tcsi_bbox, map_service = "esri",
                                         map_type = "world_light_gray_base")
 
 basemap_gray_large <- basemap_raster(tcsi_bbox_large, map_service = "esri",
                                         map_type = "world_light_gray_base")
+
+```
+# Organizations
+```{r}
+orgs <- st_read(here("data","Map point - Organization Area", "Map point - Organization Area - Points.dbf")) %>% st_transform(crs = 3310)
+respondents <- read_csv(here("data", "Respondent_names.csv")) %>% 
+  subset(Name != "Ann Hobbs - TRASH")
+names(respondents)[1] <- "responde"
+orgs <- merge(orgs, respondents)
+```
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+org_map <- tm_shape(basemap_gray_large) +
+  tm_rgb() +
+  tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+  tm_shape(orgs) +
+  tm_dots("blue", size = .25) +
+  tm_layout(title = "Organization Infrastructure", 
+            title.position = c("right", "top"),
+          title.size = 2,
+          title.bg.color = "white",
+          legend.show = FALSE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom"))
+
+#tmap_save(org_map, "org_030922.png")
 
 ```
 
@@ -882,5 +914,88 @@ tm_shape(benefit_sum_local_state_other) +
           legend.position = c("left", "bottom")) 
 
 #tmap_save(state_local_other, "state_local_other_022422.png")
+
+```
+# Impacts maps
+
+```{r}
+# Read in tidy benefits data from benefit_types_maps.Rmd
+impacts <- read.csv(here("data", "impacts_categories_tidy.csv"))
+```
+
+```{r}
+# Convert to shapefile
+impacts_sf <- impacts %>% 
+  st_as_sf(wkt = "wkt", crs = 4326) %>% 
+  dplyr::select(-geojson) 
+```
+
+
+
+```{r}
+# Create raster template 
+
+# Create field in impacts_sf (this is what rasterize will count)
+impacts_sf_field <- impacts_sf %>% mutate("field" = 1) %>% st_transform(crs = 3310)
+
+raster_template_impacts <- rast(ext(-139898.783514861, 151851.181894269, -211402.352889147, 317078.385940864), resolution = 1000, crs = st_crs(impacts_sf_field)$wkt)
+```
+
+
+### Need to get each polygon as raster.
+
+```{r}
+impacts_individual <- split(impacts_sf_field, impacts_sf_field$wkt)
+
+impacts_categories <- split(impacts_sf_field, impacts_sf_field$Category)
+
+```
+
+### Sedimentation 
+
+```{r}
+# Sedimentation impacts
+impact_stack_sed <- stack()
+
+for (x in 1:nrow(impacts_categories[["sedimentation"]])) {
+  impact_layer <- terra::rasterize(vect(impacts_categories[["sedimentation"]][[x,17]]), raster_template_impacts)
+  impact_stack_sed <- raster::stack(impact_stack_sed, as(impact_layer, "Raster"))
+}
+```
+
+
+```{r}
+# Sum layers
+impacts_sum_sed <- calc(impact_stack_sed, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+impacts_sum_sed[impacts_sum_sed == 0]<-NA
+
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(impacts_sum_sed) +
+   tm_raster(palette = "plasma", alpha = 0.5,
+             title="Count",
+             style = "cont",
+             breaks = c(1, 2, 3, 4, 5)) +
+  tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+  tm_layout(title = "Sedimentation impacts", 
+            title.position = c("right", "top"),
+          title.size = 2,
+          title.bg.color = "white",
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+
 
 ```

@@ -360,6 +360,17 @@ impacts_cat_tidy_sf <- impacts_cat_tidy %>%
   ))
 ```
 
+```{r}
+#impacts_cat_tidy <- impacts_cat_tidy %>% 
+  #mutate(value = case_when(
+    #value == 1 ~"Primary",
+    #value == 2 ~ "Secondary"
+  #))
+
+# write_csv(impacts_cat_tidy, "impacts_categories_tidy.csv")
+```
+
+
 ### Map impact categories
 
 ```{r fig.align='center'}
