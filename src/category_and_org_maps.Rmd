@@ -919,7 +919,7 @@ tm_shape(benefit_sum_local_state_other) +
 # Impacts maps
 
 ```{r}
-# Read in tidy benefits data from benefit_types_maps.Rmd
+# Read in tidy adverse impacts data from benefit_types_maps.Rmd
 impacts <- read.csv(here("data", "impacts_categories_tidy.csv"))
 ```
 

@@ -1,0 +1,143 @@
+---
+title: "Maps for InVEST Overlap"
+author: "Laurel Abowd"
+date: "3/11/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(janitor)
+library(here)
+library(sf)
+library(tmap)
+```
+
+# TCSI boundary 
+```{r}
+# TCSI boundary
+tcsi <- st_read(here("data", "TCSI_boundary", "Tahoe-Central_Sierra_Initiative.shp"))
+
+# Convert to TA crs
+tcsi <- tcsi %>% 
+  st_transform(crs = 3310)
+```
+
+# Benefits
+
+```{r}
+# Read in tidy benefits data from benefit_types_maps.Rmd
+benefits <- read.csv(here("data", "benefits_categories_tidy.csv"))
+```
+
+```{r}
+# Convert to shapefile
+benefits_sf <- benefits %>% 
+  st_as_sf(wkt = "wkt", crs = 4326) %>% 
+  dplyr::select(-geojson, -Where.are.the.most.important.benefits.from.healthy.and.resilience.forests.) %>% 
+  rename("Please.list.any.cobenefits" = "Are.there.co.benefits.or.multiple.benefits.from.this.area.that.differ.from.what.you.identified.as.the.primary.benefit.listed.above..Please.list.other.benefits.provide.by.this.area.")
+```
+
+```{r}
+# Create shapefiles for each type (water quality and water supply)
+wq_sf <- benefits_sf %>% 
+  filter(benefits_sf$Category == "Water quality")
+
+ws_sf <- benefits_sf %>% 
+  filter(benefits_sf$Category == "Water supply")
+```
+
+```{r}
+# Create shapefiles for general forest health and resilience and biodiversity
+bio_sf <- benefits_sf %>% 
+  filter(benefits_sf$Category == "Biodiversity / Habitat")
+
+health_sf <- benefits_sf %>% 
+  filter(benefits_sf$Category == "General forest health and resilience")
+```
+
+
+# Adverse impacts
+
+```{r}
+# Read in tidy adverse impactsdata from benefit_types_maps.Rmd
+impacts <- read.csv(here("data", "impacts_categories_tidy.csv"))
+```
+
+```{r}
+# Convert to shapefile
+impacts_sf <- impacts %>% 
+  st_as_sf(wkt = "wkt", crs = 4326) %>% 
+  dplyr::select(-geojson) 
+```
+
+```{r}
+# Create shapefiles for sedimentation
+sed_sf <- impacts_sf %>% 
+  filter(impacts_sf$Category == "sedimentation")
+```
+
+# Write shapefiles
+
+```{r}
+#st_write(wq_sf, "water_quality_benefits.shp", drive="ESRI Shapefile")
+#st_write(ws_sf, "water_supply_benefits.shp", drive="ESRI Shapefile")
+#st_write(sed_sf, "sedimentation_impacts.shp", drive="ESRI Shapefile")
+```
+
+```{r}
+#st_write(bio_sf, "biodiversity_benefits.shp", drive="ESRI Shapefile")
+#st_write(health_sf, "foresthealth_benefits.shp", drive="ESRI Shapefile")
+```
+
+
+# Maps
+
+```{r}
+# water quality
+tmap_mode(mode = "view")
+
+tm_shape(wq_sf) +
+   tm_fill("blue", alpha = 0.1) +
+tm_shape(tcsi) +
+  tm_borders()
+```
+
+```{r}
+# water supply
+tm_shape(ws_sf) +
+   tm_fill("purple", alpha = 0.2) +
+tm_shape(tcsi) +
+  tm_borders()
+```
+```{r}
+# biodiversity
+tmap_mode(mode = "view")
+
+tm_shape(bio_sf) +
+   tm_fill("red", alpha = 0.1) +
+tm_shape(tcsi) +
+  tm_borders()
+
+```
+```{r}
+# general forest health and resilience
+tmap_mode(mode = "view")
+
+tm_shape(health_sf) +
+   tm_fill("forestgreen", alpha = 0.1) +
+tm_shape(tcsi) +
+  tm_borders()
+```
+
+
+
+```{r}
+# sedimentation
+tm_shape(sed_sf) +
+   tm_fill("orange", alpha = 0.2) +
+tm_shape(tcsi) +
+  tm_borders()
+```
+
