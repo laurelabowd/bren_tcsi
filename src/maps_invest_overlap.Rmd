@@ -91,6 +91,10 @@ sed_sf <- impacts_sf %>%
 #st_write(health_sf, "foresthealth_benefits.shp", drive="ESRI Shapefile")
 ```
 
+```{r}
+#st_write(benefits_sf, "benefits.shp", drive="ESRI Shapefile")
+```
+
 
 # Maps
 

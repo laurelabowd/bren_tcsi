@@ -123,11 +123,7 @@ benefit_freq_order %>%
 ```{r}
 benefits_cat_tidy_sf <- benefits_cat_tidy %>% 
   st_as_sf(wkt = "wkt", crs = 4326) %>% 
-  dplyr::select(-geojson) %>% 
-  mutate(value = case_when(
-    value == 1 ~"Primary",
-    value == 2 ~ "Secondary"
-  ))
+  dplyr::select(-geojson) 
 ```
 
 
@@ -157,11 +153,9 @@ raster_template_benefit <- rast(ext(-139898.783514861, 151851.181894269, -211402
                             #field = "field", fun = sum)
 ```
 
-
 ```{r}
 #plot(raster_benefts)  ## Only get single raster
 ```
-
 
 ### Need to get each polygon as raster.
 
@@ -206,6 +200,11 @@ benefits_sum_2[benefits_sum_2 == 0]<-NA
 # Plot summation 
 plot(benefits_sum_2)
 ```
+```{r}
+# write raster file
+# writeRaster(benefits_sum_2, "benefit_count.tif", overwrite=TRUE)
+```
+
 ### Tmap of raster addition
 
 ```{r}
