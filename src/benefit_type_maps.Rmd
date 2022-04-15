@@ -134,6 +134,24 @@ ggplot(data = benefits_cat_tidy_sf) +
   geom_sf(aes(geometry = wkt, fill = value), alpha = 0.5) +
   facet_wrap(~ Category, ncol = 8) 
 ```
+# Union benefits categories
+```{r}
+benefits_union_tidy_sf <- benefits_cat_tidy_sf %>% 
+  group_by(Category) %>% 
+  summarise()
+
+```
+
+```{r}
+ggplot(data = benefits_union_tidy_sf) +
+  geom_sf(aes(geometry = wkt), alpha = 0.5) +
+  facet_wrap(~ Category, ncol = 8) 
+```
+```{r}
+#st_write(benefits_union_tidy_sf, "dissolved_benefits.shp", drive="ESRI Shapefile")
+```
+
+
 
 ### Raster maps of benefit count
 
@@ -694,5 +712,140 @@ tm_layout(title = "Management Priorities",
 priorities_map_nolegend
 
 #tmap_save(priorities_map_nolegend, "priorities_map_count_nolegend_022422.png")
+```
+
+# Benefits union raster map
+
+### Raster maps of benefit count
+
+```{r}
+# Teale Albers projection in meters. 
+#TA <- CRS("+proj=aea +lat_1=34 +lat_2=40.5 +lat_0=0 +lon_0=-120 +x_0=0 +y_0=-4000000 +datum=WGS84 +units=m")
+
+# Create field in benefits_cat_tidy_sf (this is what rasterize will count)
+benefits_union_tidy_sf_field <- benefits_union_tidy_sf %>% mutate("field" = 1) %>% st_transform(crs = 3310)
+
+# Create raster template 
+raster_template_benefit <- rast(ext(-139898.783514861, 151851.181894269, -211402.352889147, 317078.385940864), resolution = 1000, crs = st_crs(benefits_union_tidy_sf_field)$wkt)
+                                
+
+# Create raster map with count of benefits (field)
+#raster_benefts <- terra::rasterize(vect(benefits_cat_tidy_sf_field), raster_template_benefit,
+                            #field = "field", fun = sum)
+```
+
+```{r}
+#plot(raster_benefts)  ## Only get single raster
+```
+
+### Need to get each polygon as raster.
+
+```{r}
+benefits_individual <- split(benefits_union_tidy_sf_field, benefits_union_tidy_sf_field$Category)
+
+```
+
+```{r}
+# Create raster map with count of benefits (field)
+# Sample for one row
+raster_benefits_1 <- terra::rasterize(vect(benefits_union_tidy_sf_field[1,]), raster_template_benefit)
+```
+
+```{r}
+plot(raster_benefits_1*3) # checked raster math works
+```
+
+```{r}
+# create empty raster stack to store objects
+benefit_stack <- stack()
+
+
+# Create loop to stack each raster layer (each individual polygon)
+for (x in 1:17) {
+  benefit_layer <- terra::rasterize(vect(benefits_union_tidy_sf_field[x,]), raster_template_benefit)
+  benefit_stack <- raster::stack(benefit_stack, as(benefit_layer, "Raster"))
+}
+```
+
+
+```{r}
+# Sum layers
+benefits_sum_2 <- calc(benefit_stack, fun = sum, na.rm = TRUE) 
+
+# Any raster cells with value of 0 become NA
+benefits_sum_2[benefits_sum_2 == 0]<-NA
+
+```
+
+```{r}
+# Plot summation 
+plot(benefits_sum_2)
+```
+
+```{r}
+# write raster file
+# writeRaster(benefits_sum_2, "benefit_count.tif", overwrite=TRUE)
+```
+
+### Tmap of raster addition
+
+```{r}
+# TCSI boundary
+tcsi <- st_read(here("data", "TCSI_boundary", "Tahoe-Central_Sierra_Initiative.shp"))
+
+# Convert to TA crs
+tcsi <- tcsi %>% 
+  st_transform(crs = 3310)
+```
+```{r}
+# Create basemap
+library(basemaps)
+
+tcsi_bbox = st_bbox(tcsi, crs = st_crs(tcsi))
+
+# Increase size of bbox for space around edges
+tcsi_bbox_large = st_bbox(st_buffer(st_as_sfc(tcsi_bbox), 15000)) 
+
+basemap_gray <- basemap_raster(tcsi_bbox, map_service = "esri",
+                                        map_type = "world_light_gray_base")
+
+basemap_gray_large <- basemap_raster(tcsi_bbox_large, map_service = "esri",
+                                        map_type = "world_light_gray_base")
+
+```
+
+
+```{r}
+library(tmap)
+
+tmap_mode(mode = "plot")
+
+benefits_map_nolegend <- tm_shape(basemap_gray_large) +
+  tm_rgb() +
+tm_shape(benefits_sum_2) +
+   tm_raster(palette = "inferno", alpha = 0.5,
+             title="Benefit count",
+             style = "cont") +
+tm_shape(tcsi) +
+  tm_borders("black", lwd = 2) +
+tm_layout(title = "Benefits", 
+            title.position = c("right", "top"),
+          title.size = 2,
+          title.bg.color = "white",
+          legend.show = TRUE,
+          legend.bg.color = "white",
+          frame = TRUE, frame.lwd = 2,
+          legend.position = c("left", "bottom")) 
+
+benefits_map_nolegend
+
+#breaks = c(1, 5, 15, 25)
+
+# tmap_save(benefits_map_nolegend, "benefits_map_count_nolegend_022422.png")
+```
+
+```{r}
+# write raster file
+#writeRaster(benefits_sum_2, "dissolved_benefit_count.tif", overwrite=TRUE)
 ```
 

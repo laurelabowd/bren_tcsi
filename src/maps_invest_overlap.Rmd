@@ -57,7 +57,6 @@ health_sf <- benefits_sf %>%
   filter(benefits_sf$Category == "General forest health and resilience")
 ```
 
-
 # Adverse impacts
 
 ```{r}
@@ -93,6 +92,19 @@ sed_sf <- impacts_sf %>%
 
 ```{r}
 #st_write(benefits_sf, "benefits.shp", drive="ESRI Shapefile")
+```
+```{r}
+tmap_mode(mode = "view")
+
+tm_shape(wq_sf) +
+   tm_fill("blue", alpha = 0.1) +
+tm_shape(bio_sf) +
+  tm_fill("forestgreen", alpha = 0.1) +
+tm_shape(sed_sf) +
+  tm_fill("red", alpha = 0.1) +
+tm_shape(tcsi) +
+  tm_borders()
+
 ```
 
 
