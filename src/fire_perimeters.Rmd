@@ -1,0 +1,42 @@
+---
+title: "Fire perimeters"
+author: "Laurel Abowd"
+date: "1/31/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(sf)
+```
+
+
+```{r}
+fire_perimeters <- st_read(here("data", "fire20_1_perimeters", "fire20_1.gdb"))
+```
+```{r}
+king_fire <- fire_perimeters %>% 
+  filter(FIRE_NAME == "KING", YEAR_ == "2014") 
+```
+
+```{r}
+#st_write(king_fire, "king_fire_perimeter.shp", drive="ESRI Shapefile")
+```
+
+```{r}
+# buffer around king fire perimeter
+king_fire_buffer <- st_buffer(king_fire, 30000)
+```
+
+```{r}
+ggplot() +
+  geom_sf(data = king_fire_buffer) +
+  geom_sf(data = king_fire)
+```
+
+```{r}
+#st_write(king_fire_buffer, "king_fire_buffer_30000.shp", drive="ESRI Shapefile")
+```
+
